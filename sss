@@ -51,11 +51,10 @@ CombatBox:AddToggle('WallBangV2', { Text = '투사체 월뱅 (유도)', Default 
 CombatBox:AddToggle('Aimbot', { Text = '에임봇 (우클릭 고정)', Default = false })
 CombatBox:AddToggle('SilentAim', { Text = '사일런트 에임 (강력)', Default = false })
 
--- 시각 효과 탭 (좌측: ESP 및 알림)
+-- 시각 효과 탭 (좌측: ESP)
 VisualsBox:AddToggle('ESP_Master', { Text = 'ESP 프레임워크 활성화', Default = false })
 VisualsBox:AddToggle('ESP_Box', { Text = '박스 가시화', Default = true })
 VisualsBox:AddToggle('ESP_Name', { Text = '이름/거리 텍스트', Default = true })
-VisualsBox:AddToggle('HitLog', { Text = '히트 로그 알림 (Hit Log)', Default = true }) -- 요청하신 히트로그 온오프 토글
 
 -- 시각 효과 탭 (우측: 오버레이 및 FOV 내부 채우기 설정)
 VisualEffectBox:AddToggle('ScreenEffect', { Text = '화면 컬러 오버레이 활성화', Default = false })
@@ -232,18 +231,6 @@ end)
 
 -- [[ 3. 핵심 인게임 기능 로직 ]] --
 
--- 히트로그 출력용 공용 헬퍼 함수
-local function logHit(character, partName)
-    if Toggles.HitLog.Value and character then
-        local targetName = character.Name
-        -- 플레이어 모델 이름이 실제 유저 이름과 일치하는 플레이어 오브젝트 검색
-        local pObj = plrs:FindFirstChild(targetName)
-        if pObj and pObj ~= lp then
-            Library:Notify(string.format('Hit "%s" in %s', pObj.Name, partName or "Unknown"), 3)
-        end
-    end
-end
-
 function changeSkin(gunName, skinName, wrapName, charmName)
     pcall(function()
         if itemLib and cosmeticLib then
@@ -300,9 +287,6 @@ util.Raycast = function(s, o, d, len, f, ft, viz)
         local tgt = getClosestToCenter()
         if tgt and tgt:FindFirstChild("Head") then
             local hitpos = tgt.Head.Position
-            
-            -- 사일런트 에임 적중 알림 전송 연동
-            logHit(tgt, "Head")
             
             return {
                 Position = hitpos,
@@ -416,9 +400,6 @@ workspace.ChildAdded:Connect(function(v)
                         v.CFrame = currentTargetHitbox.Head.CFrame
                         v.AssemblyLinearVelocity = Vector3.zero
                         
-                        -- 투사체 월뱅 강제 충돌 시점에 히트로그 연동 전송
-                        logHit(currentTargetHitbox, "Head")
-                        
                         if firetouchinterest then
                             firetouchinterest(currentTargetHitbox.Head, v, 0)
                             firetouchinterest(currentTargetHitbox.Head, v, 1)
@@ -440,7 +421,6 @@ SaveManager:SetIgnoreIndexes({ 'MenuKeybind' })
 ThemeManager:SetFolder('GPDMD_Korea')
 SaveManager:SetFolder('GPDMD_Korea/Rivals')
 
--- 테마 및 설정 파일 관리 그룹박스를 UI Settings 탭에 정상 배치
 ThemeManager:ApplyToTab(Tabs['UI Settings'])
 SaveManager:BuildConfigSection(Tabs['UI Settings'])
 SaveManager:LoadAutoloadConfig()
