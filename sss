@@ -387,27 +387,20 @@ rs.RenderStepped:Connect(function()
     end
 end)
 
+-- 투사체 월뱅 시 무한루프 연타를 없애고 깔끔하게 단발성으로 1회 동기화하여 상대가 날아가는 버그 차단
 workspace.ChildAdded:Connect(function(v)
     task.wait()
-    if Toggles.WallBangV2.Value and getClosestToCenter() then
+    if Toggles.WallBangV2.Value then
         local currentTargetHitbox = getClosestToCenter()
         local pNames = {["CoreProjectile"]=true, ["Slingshot"]=true, ["Daggers"]=true, ["Bow"]=true, ["Paintball Gun"]=true, ["Bullet"]=true}
         if (pNames[v.Name] or v:IsA("BasePart")) and currentTargetHitbox and currentTargetHitbox:FindFirstChild("Head") then
-            task.spawn(function()
-                local s = tick()
-                while v and v.Parent and (tick() - s) < 1.5 do
-                    if currentTargetHitbox and currentTargetHitbox:FindFirstChild("Head") then
-                        v.CFrame = currentTargetHitbox.Head.CFrame
-                        v.AssemblyLinearVelocity = Vector3.zero
-                        
-                        if firetouchinterest then
-                            firetouchinterest(currentTargetHitbox.Head, v, 0)
-                            firetouchinterest(currentTargetHitbox.Head, v, 1)
-                        end
-                    end
-                    task.wait()
-                end
-            end)
+            local targetHead = currentTargetHitbox.Head
+            if targetHead and firetouchinterest and v:IsDescendantOf(workspace) then
+                v.CFrame = targetHead.CFrame
+                v.AssemblyLinearVelocity = Vector3.zero
+                firetouchinterest(targetHead, v, 0)
+                firetouchinterest(targetHead, v, 1)
+            end
         end
     end
 end)
@@ -421,10 +414,24 @@ SaveManager:SetIgnoreIndexes({ 'MenuKeybind' })
 ThemeManager:SetFolder('GPDMD_Korea')
 SaveManager:SetFolder('GPDMD_Korea/Rivals')
 
+-- [ UI Settings 탭 메뉴 그룹 박스 완벽 복구 ]
+local MenuGroup = Tabs['UI Settings']:AddLeftGroupbox('Menu')
+MenuGroup:AddButton('Unload', function() Library:Unload() end)
+
+-- KeyPicker 컴포넌트를 생성하고 바인딩이 변경될 때마다 Library.ToggleKeybind를 실시간으로 동기화해 줍니다.
+MenuGroup:AddLabel('Menu bind'):AddKeyPicker('MenuKeybind', { Default = 'End', NoUI = true, Text = 'Menu keybind' })
+
+-- ★ 수정 핵심 파트: 사용자가 UI 상에서 키를 재설정(세팅)하면 이를 라이브러리에 실시간 반영하여 작동하도록 보정
+Library.ToggleKeybind = Options.MenuKeybind.Value
+Options.MenuKeybind:OnClick(function()
+    Library.ToggleKeybind = Options.MenuKeybind.Value
+end)
+
 ThemeManager:ApplyToTab(Tabs['UI Settings'])
 SaveManager:BuildConfigSection(Tabs['UI Settings'])
 SaveManager:LoadAutoloadConfig()
 
+-- 워터마크 및 프레임 레이트 실시간 업데이트 시스템 전체 마무리 복구
 Library:SetWatermarkVisibility(true)
 local FrameTimer = tick()
 local FrameCounter = 0;
